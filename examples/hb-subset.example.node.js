@@ -1,13 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 
-// 关键：必须加载 hb-subset.js，而不是 wasm
-const createHBSubset = require("../hb-subset.js");
-
 const SUBSET_TEXT = "abc";
 
 async function main() {
-  const hb = await createHBSubset(); // Emscripten 工厂函数
+  // 🚀 正确加载 Emscripten 模块（非常重要）
+  const createHBSubset = require("../hb-subset.js");
+  const hb = await createHBSubset();
 
   console.log("hb-subset wasm loaded");
 
@@ -15,8 +14,10 @@ async function main() {
   const fontPath = path.join(__dirname, "../test/fonts/noto", fileName);
   const fontBlob = fs.readFileSync(fontPath);
 
+  // ---- memory copy ----
   const ptr = hb._malloc(fontBlob.length);
-  hb.HEAPU8.set(fontBlob, ptr);
+  hb.HEAPU8.set(fontBlob, ptr);   // <== 这里不会再 undefined
+  // -----------------------
 
   const blob = hb._hb_blob_create(ptr, fontBlob.length, 2, 0, 0);
   const face = hb._hb_face_create(blob, 0);
@@ -40,11 +41,10 @@ async function main() {
 
   const subsetData = hb.HEAPU8.slice(resultPtr, resultPtr + resultLen);
 
-  const outName = path.basename(fileName, path.extname(fileName)) + ".subset.ttf";
-  const outPath = path.join(__dirname, outName);
+  const out = path.join(__dirname, "subset.ttf");
+  fs.writeFileSync(out, Buffer.from(subsetData));
 
-  fs.writeFileSync(outPath, Buffer.from(subsetData));
-  console.log("Wrote subset:", outPath);
+  console.log("Wrote subset:", out);
 
   hb._hb_blob_destroy(resultBlob);
   hb._hb_face_destroy(subsetFace);
@@ -52,7 +52,7 @@ async function main() {
   hb._free(ptr);
 }
 
-main().catch(err => {
-  console.error(err);
+main().catch(e => {
+  console.error(e);
   process.exit(1);
 });
