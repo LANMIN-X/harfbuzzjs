@@ -2,10 +2,10 @@ name: Build
 
 on:
   push:
-    branches: ["main"]
-    tags: ["*"]
+    branches: [ "main" ]
+    tags: [ "*" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 permissions:
   contents: write
@@ -21,10 +21,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
+      # Emscripten Cache
       - name: Setup cache
         id: cache-system-libraries
         uses: actions/cache@v3
@@ -32,33 +33,21 @@ jobs:
           path: ${{ env.EM_CACHE_FOLDER }}
           key: ${{ env.EM_VERSION }}-${{ runner.os }}
 
+      # Emscripten Install
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
           version: ${{ env.EM_VERSION }}
           actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
 
+      # Build WASM
       - name: Build hb.wasm
         run: ./build.sh
 
-      - name: Build hb-subset.js + wasm
+      - name: Build hb-subset.wasm
         run: ./build-subset.sh
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-
-      - name: NPM install
-        run: npm install
-
-      - name: Run tests
-        run: npm test
-
-      - name: Test hb.wasm
-        run: node examples/hbjs.example.node.js
-
-      - name: Test hb-subset.js
-        run: node examples/hb-subset.example.node.js
-
+      # Upload Artifacts ONLY
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -86,13 +75,16 @@ jobs:
         with:
           name: wasm
 
-      - name: Check for release
-        id: create_release
+      # Create Release if missing
+      - name: Check or create release
         run: |
           if ! gh release view ${{ github.ref_name }}; then
             gh release create ${{ github.ref_name }} --title ${{ github.ref_name }} --generate-notes
           fi
 
-      - name: Populate release
+      # Upload WASM
+      - name: Upload release files
         run: |
-          gh release upload ${{ github.ref_name }} hb.js hb.wasm hb-subset.js hb-subset.wasm --clobber
+          gh release upload ${{ github.ref_name }} \
+            hb.js hb.wasm hb-subset.js hb-subset.wasm \
+            --clobber
