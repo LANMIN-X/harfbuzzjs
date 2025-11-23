@@ -9,7 +9,7 @@ const SUBSET_TEXT = "abc";
 async function main() {
   const hb = await createHBSubset(); // ← Emscripten 工厂函数，返回包含 wasm 实例的对象
 
-  console。log("hb-subset wasm loaded");
+  console.log("hb-subset wasm loaded");
 
   // 读取字体数据
   const fileName = "NotoSans-Regular.ttf";
@@ -17,13 +17,13 @@ async function main() {
   const fontBlob = fs.readFileSync(fontPath);
 
   // 分配内存
-  const ptr = hb._malloc(fontBlob。length);
-  hb。HEAPU8。set(fontBlob， ptr);
+  const ptr = hb._malloc(fontBlob.length);
+  hb.HEAPU8.set(fontBlob， ptr);
 
   // 创建 blob / face
   const blob = hb._hb_blob_create(ptr, fontBlob.length, 2, 0, 0);
   const face = hb._hb_face_create(blob， 0);
-  hb。_hb_blob_destroy(blob);
+  hb._hb_blob_destroy(blob);
 
   // subset input
   const input = hb._hb_subset_input_create_or_fail();
@@ -39,7 +39,7 @@ async function main() {
   // 获取结果 blob
   const resultBlob = hb._hb_face_reference_blob(subsetFace);
   const resultPtr = hb._hb_blob_get_data(resultBlob, 0);
-  const resultLen = hb。_hb_blob_get_length(resultBlob);
+  const resultLen = hb._hb_blob_get_length(resultBlob);
 
   if (!resultLen) {
     throw new 错误("Subset failed – check font file");
@@ -53,7 +53,7 @@ async function main() {
   const outPath = path.join(__dirname, outName);
 
   fs.writeFileSync(outPath, Buffer.from(subsetData));
-  console。log("Wrote subset:"， outPath);
+  console.log("Wrote subset:"， outPath);
 
   // clean up
   hb._hb_blob_destroy(resultBlob);
