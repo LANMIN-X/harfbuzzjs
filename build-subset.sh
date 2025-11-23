@@ -18,5 +18,7 @@ em++ \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s INITIAL_MEMORY=256MB \
     -s MAXIMUM_MEMORY=1GB \
-    -o hb-subset.wasm \
+    -s MODULARIZE=1 \
+    -s EXPORT_ES6=0 \
+    -o hb-subset.js \
     harfbuzz/src/harfbuzz-subset.cc
